@@ -111,6 +111,12 @@
           endKm: 60000,
           endDate: "2021-08-31",
         },
+        "Erika (øvelseskjøring)": {
+          startKm: 0,
+          startDate: "2020-06-04",
+          endKm: 2000,
+          endDate: "2022-06-04",
+        },
       };
       for (const car in data) {
         document
@@ -138,8 +144,7 @@
       );
 
       function updateExpectedKm() {
-        console.log("hey2)");
-        carSelectEl = document.getElementById("carSelect");
+        const carSelectEl = document.getElementById("carSelect");
         const car = carSelectEl[carSelectEl.selectedIndex].text;
         document.getElementById("expectedKm").value = Math.round(
           ((Math.floor(new Date() / 8.64e7) -
@@ -152,14 +157,24 @@
         );
       }
       function updateResult() {
-        const calcResult =
+        const carSelectEl = document.getElementById("carSelect");
+        const erika =
+          carSelectEl[carSelectEl.selectedIndex].text.split(" ")[0] == "Erika";
+        let calcResult =
           document.getElementById("expectedKm").value -
           document.getElementById("currKm").value;
-        document.getElementById("result").innerText = `${
-          calcResult < 0 ? "brukt " : ""
-        }${Math.abs(calcResult)} km ${
-          calcResult < 0 ? "for mye" : "til overs"
-        }`;
+        if (erika) {
+          calcResult *= -1;
+          document.getElementById("result").innerText = `kjørt ${Math.abs(
+            calcResult
+          )} km ${calcResult < 0 ? "for lite" : "mer enn nødvendig"}`;
+        } else {
+          document.getElementById("result").innerText = `${
+            calcResult < 0 ? "brukt " : ""
+          }${Math.abs(calcResult)} km ${
+            calcResult < 0 ? "for mye" : "til overs"
+          }`;
+        }
         document.getElementById("result").style.color =
           calcResult < 0 ? "#d53412" : "#20af0a";
       }
