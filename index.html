@@ -1,1 +1,168 @@
-Hello, world!
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
+    />
+    <title>Kilometerstandkalkulator</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+      integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <h2 class="text-center">Kilometerstand&shy;kalkulator</h2>
+      </div>
+      <hr />
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="carSelect">Velg bil</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <select name="carSelect" id="carSelect">
+            <option selected disabled>Velg</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="startKm">Km.stand ved periodestart</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <input type="number" name="startKm" id="startKm" value="0" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="startDate">Dato for periodestart</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <input
+            type="date"
+            name="startDate"
+            id="startDate"
+            placeholder="yyyy-mm-dd"
+          />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="endKm">Km.stand ved periodeslutt</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <input type="number" name="endKm" id="endKm" value="0" />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="endDate">Dato for periodeslutt</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <input
+            type="date"
+            name="endDate"
+            id="endDate"
+            placeholder="yyyy-mm-dd"
+          />
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-4 col-xs-12">
+          <label for="currKm">Nåværende km.stand</label>
+        </div>
+        <div class="col-sm-8 col-xs-12">
+          <input type="number" name="currKm" id="currKm" value="0" />
+        </div>
+      </div>
+      <hr />
+      <div class="row">
+        <p class="text-center">
+          Du har per i dag
+          <span class="h3" id="result"></span>.
+        </p>
+      </div>
+    </div>
+
+    <input type="number" name="expectedKm" id="expectedKm" value="0" hidden />
+    <script>
+      const data = {
+        Jonas: {
+          startKm: 26068,
+          startDate: "2021-02-25",
+          endKm: 38000,
+          endDate: "2022-02-21",
+        },
+        Irene: {
+          startKm: 0,
+          startDate: "2018-03-01",
+          endKm: 60000,
+          endDate: "2022-03-01",
+        },
+        Øystein: {
+          startKm: 0,
+          startDate: "2018-08-31",
+          endKm: 60000,
+          endDate: "2021-08-31",
+        },
+      };
+      for (const car in data) {
+        document
+          .getElementById("carSelect")
+          .insertAdjacentHTML("beforeend", `<option>${car}</option>`);
+      }
+      document.getElementById("carSelect").addEventListener("change", (evt) => {
+        const car = evt.target[evt.target.selectedIndex].text;
+        document.getElementById("startKm").value = data[car].startKm;
+        document.getElementById("startDate").value = data[car].startDate;
+        document.getElementById("endKm").value = data[car].endKm;
+        document.getElementById("endDate").value = data[car].endDate;
+        updateExpectedKm();
+        document.getElementById("currKm").value = document.getElementById(
+          "expectedKm"
+        ).value;
+        updateResult();
+      });
+
+      document.querySelectorAll("input").forEach((el) =>
+        el.addEventListener("input", () => {
+          updateExpectedKm();
+          updateResult();
+        })
+      );
+
+      function updateExpectedKm() {
+        console.log("hey2)");
+        carSelectEl = document.getElementById("carSelect");
+        const car = carSelectEl[carSelectEl.selectedIndex].text;
+        document.getElementById("expectedKm").value = Math.round(
+          ((Math.floor(new Date() / 8.64e7) -
+            new Date(document.getElementById("startDate").value) / 8.64e7) /
+            (new Date(document.getElementById("endDate").value) / 8.64e7 -
+              new Date(document.getElementById("startDate").value) / 8.64e7)) *
+            (document.getElementById("endKm").value -
+              document.getElementById("startKm").value) +
+            data[car].startKm
+        );
+      }
+      function updateResult() {
+        const calcResult =
+          document.getElementById("expectedKm").value -
+          document.getElementById("currKm").value;
+        document.getElementById("result").innerText = `${
+          calcResult < 0 ? "brukt " : ""
+        }${Math.abs(calcResult)} km ${
+          calcResult < 0 ? "for mye" : "til overs"
+        }`;
+        document.getElementById("result").style.color =
+          calcResult < 0 ? "#d53412" : "#20af0a";
+      }
+    </script>
+  </body>
+</html>
