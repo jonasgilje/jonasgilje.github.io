@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Live Power Usage</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #value { font-size: 3rem; font-weight: bold; }
+    #time { color: #666; margin-top: 5px; }
+  </style>
+</head>
+<body>
+
+  <h1>Live Power Usage</h1>
+  <div id="value">Loading…</div>
+  <div id="time"></div>
+
+  <script>
+    const SUPABASE_URL = "https://oaovqgtflljlqlacckkh.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_wcA2Vovx12LzSD-2zPJICQ_yW0QJGLs";
+
+    async function fetchLatest() {
+      const url = `${SUPABASE_URL}/rest/v1/power_readings?select=*&order=timestamp.desc&limit=1`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`
+          }
+        });
+
+        const data = await res.json();
+        if (data.length > 0) {
+          const reading = data[0];
+          document.getElementById("value").textContent = reading.watts + " W";
+          document.getElementById("time").textContent =
+            "Updated: " + new Date(reading.timestamp).toLocaleString();
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    }
+
+    fetchLatest();
+    setInterval(fetchLatest, 10000);
+  </script>
+
+</body>
+</html>
