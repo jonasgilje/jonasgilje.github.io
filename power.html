@@ -13,14 +13,18 @@
 
   <h1>Live Power Usage</h1>
   <div id="value">Loading…</div>
+  <div id="value2">Loading…</div>
   <div id="time"></div>
 
   <script>
-    const SUPABASE_URL = "https://oaovqgtflljlqlacckkh.supabase.co";
+    const SUPABASE_URL = "https://oaovqgtflljlqlacckhh.supabase.co";
     const SUPABASE_KEY = "sb_publishable_wcA2Vovx12LzSD-2zPJICQ_yW0QJGLs";
 
     async function fetchLatest() {
-      const url = `${SUPABASE_URL}/rest/v1/power_readings?select=*&order=timestamp.desc&limit=1`;
+      const now = new Date();
+      now.setUTCMinutes(0, 0, 0);
+      const lastHourUTC = new Date(now.getTime()).toISOString();
+      const url = `${SUPABASE_URL}/rest/v1/power_readings?select=*&timestamp=gte.${lastHourUTC}&order=timestamp.desc&limit=2000`;
 
       try {
         const res = await fetch(url, {
@@ -32,8 +36,10 @@
 
         const data = await res.json();
         if (data.length > 0) {
+		console.log(data);
           const reading = data[0];
           document.getElementById("value").textContent = reading.watts + " W";
+          document.getElementById("value2").textContent = "Hourly average: " + (data.reduce((currentValue, obj1) => currentValue + Number(obj1.watts), 0) / data.length).toFixed(1) + " W";
           document.getElementById("time").textContent =
             "Updated: " + new Date(reading.timestamp).toLocaleString();
         }
