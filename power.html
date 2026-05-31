@@ -52,12 +52,22 @@
       console.error("Fetch error:", err);
     }
   }
-
   async function fetch24hAverages() {
     const now = new Date();
-    const since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-    const url = `${SUPABASE_URL}/rest/v1/power_readings?select=*&timestamp=gte.${since}&order=timestamp.asc&limit=50000`;
+    // End at the current hour (21:00 if it's 21:19)
+    const endHour = new Date(now);
+    endHour.setMinutes(0, 0, 0);
+
+    // Start 24 hours before that
+    const startHour = new Date(endHour.getTime() - 24 * 60 * 60 * 1000);
+
+    const url = `${SUPABASE_URL}/rest/v1/power_readings` +
+                `?select=*` +
+                `&timestamp=gte.${startHour.toISOString()}` +
+                `&timestamp=lt.${endHour.toISOString()}` +
+                `&order=timestamp.asc` +
+                `&limit=50000`;
 
     try {
       const res = await fetch(url, {
@@ -69,37 +79,51 @@
 
       const data = await res.json();
 
-      // Group readings by hour
-      const buckets = {};
+      // Prepare 24 buckets, index 0 = oldest, 23 = latest (20–21 if now is 21:19)
+      const buckets = Array.from({ length: 24 }, () => []);
+
       data.forEach(r => {
         const ts = new Date(r.timestamp);
-        const hourKey = ts.getFullYear() + "-" +
-                        (ts.getMonth()+1).toString().padStart(2,"0") + "-" +
-                        ts.getDate().toString().padStart(2,"0") + " " +
-                        ts.getHours().toString().padStart(2,"0") + ":00";
+        const diffMs = ts.getTime() - startHour.getTime();
+        const hourIndex = Math.floor(diffMs / (60 * 60 * 1000));
 
-        if (!buckets[hourKey]) buckets[hourKey] = [];
-        buckets[hourKey].push(Number(r.watts));
+        if (hourIndex >= 0 && hourIndex < 24) {
+          buckets[hourIndex].push(Number(r.watts));
+        }
       });
 
-      // Compute averages
-      const sortedHours = Object.keys(buckets).sort();
       const list = document.getElementById("hourly-list");
       list.innerHTML = "";
 
-      sortedHours.forEach(hour => {
-        const arr = buckets[hour];
-        const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+      // Build labels and averages from latest to oldest
+      for (let i = 23; i >= 0; i--) {
+        const bucketStart = new Date(startHour.getTime() + i * 60 * 60 * 1000);
+        const bucketEnd = new Date(bucketStart.getTime() + 60 * 60 * 1000);
+
+        const label =
+          bucketStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+          " - " +
+          bucketEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+        const readings = buckets[i];
+        let text;
+        if (readings.length === 0) {
+          text = `${label} — no data`;
+        } else {
+          const avg = readings.reduce((a, b) => a + b, 0) / readings.length;
+          text = `${label} — ${avg.toFixed(1)} W`;
+        }
 
         const li = document.createElement("li");
-        li.textContent = `${hour} — ${avg.toFixed(1)} W`;
+        li.textContent = text;
         list.appendChild(li);
-      });
+      }
 
     } catch (err) {
       console.error("Fetch error:", err);
     }
   }
+
 
   fetchLatest();
   fetch24hAverages();
