@@ -55,72 +55,72 @@
   async function fetch24hAverages() {
     const now = new Date();
 
-    // End at the current hour (21:00 if it's 21:19)
+    // End at the current hour (e.g., 21:00 if it's 21:19)
     const endHour = new Date(now);
     endHour.setMinutes(0, 0, 0);
 
     // Start 24 hours before that
     const startHour = new Date(endHour.getTime() - 24 * 60 * 60 * 1000);
 
-    const url = `${SUPABASE_URL}/rest/v1/power_readings` +
-                `?select=*` +
-                `&timestamp=gte.${startHour.toISOString()}` +
-                `&timestamp=lt.${endHour.toISOString()}` +
-                `&order=timestamp.asc` +
-                `&limit=50000`;
+    const url =
+      `${SUPABASE_URL}/rest/v1/power_readings` +
+      `?select=*` +
+      `&timestamp=gte.${startHour.toISOString()}` +
+      `&timestamp=lt.${endHour.toISOString()}` +
+      `&order=timestamp.asc` +
+      `&limit=1000`;
 
-    try {
-      const res = await fetch(url, {
-        headers: {
-          "apikey": SUPABASE_KEY,
-          "Authorization": `Bearer ${SUPABASE_KEY}`
-        }
-      });
+    const res = await fetch(url, {
+      headers: {
+        "apikey": SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`
+      }
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      // Prepare 24 buckets, index 0 = oldest, 23 = latest (20–21 if now is 21:19)
-      const buckets = Array.from({ length: 24 }, () => []);
+    // Prepare 24 buckets (0 = oldest hour, 23 = latest hour)
+    const buckets = Array.from({ length: 24 }, () => []);
 
-      data.forEach(r => {
-        const ts = new Date(r.timestamp);
-        const diffMs = ts.getTime() - startHour.getTime();
-        const hourIndex = Math.floor(diffMs / (60 * 60 * 1000));
+    // Sample every 10th reading
+    for (let i = 0; i < data.length; i += 10) {
+      const r = data[i];
+      const ts = new Date(r.timestamp);
 
-        if (hourIndex >= 0 && hourIndex < 24) {
-          buckets[hourIndex].push(Number(r.watts));
-        }
-      });
+      const diffMs = ts.getTime() - startHour.getTime();
+      const hourIndex = Math.floor(diffMs / (60 * 60 * 1000));
 
-      const list = document.getElementById("hourly-list");
-      list.innerHTML = "";
+      if (hourIndex >= 0 && hourIndex < 24) {
+        buckets[hourIndex].push(Number(r.watts));
+      }
+    }
 
-      // Build labels and averages from latest to oldest
-      for (let i = 23; i >= 0; i--) {
-        const bucketStart = new Date(startHour.getTime() + i * 60 * 60 * 1000);
-        const bucketEnd = new Date(bucketStart.getTime() + 60 * 60 * 1000);
+    const list = document.getElementById("hourly-list");
+    list.innerHTML = "";
 
-        const label =
-          bucketStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
-          " - " +
-          bucketEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    // Output from newest → oldest
+    for (let i = 23; i >= 0; i--) {
+      const bucketStart = new Date(startHour.getTime() + i * 60 * 60 * 1000);
+      const bucketEnd = new Date(bucketStart.getTime() + 60 * 60 * 1000);
 
-        const readings = buckets[i];
-        let text;
-        if (readings.length === 0) {
-          text = `${label} — no data`;
-        } else {
-          const avg = readings.reduce((a, b) => a + b, 0) / readings.length;
-          text = `${label} — ${avg.toFixed(1)} W`;
-        }
+      const label =
+        bucketStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) +
+        " - " +
+        bucketEnd.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-        const li = document.createElement("li");
-        li.textContent = text;
-        list.appendChild(li);
+      const readings = buckets[i];
+      let text;
+
+      if (readings.length === 0) {
+        text = `${label} — no data`;
+      } else {
+        const avg = readings.reduce((a, b) => a + b, 0) / readings.length;
+        text = `${label} — ${avg.toFixed(1)} W`;
       }
 
-    } catch (err) {
-      console.error("Fetch error:", err);
+      const li = document.createElement("li");
+      li.textContent = text;
+      list.appendChild(li);
     }
   }
 
